@@ -346,10 +346,29 @@ func modifyBrBody(res *http.Response, originalScheme string, originalHost string
 	modifiedBody := []byte(modifiedBodyStr)
 	// br 压缩
 	var buf bytes.Buffer
-	writer := brotli.NewWriter(&buf)
-	writer.Write(modifiedBody)
-	writer.Close()
+	// writer := brotli.NewWriter(&buf)
+	// writer.Write(modifiedBody)
+	//writer.Close()
 
+	writer := gzip.NewWriter(&buf)
+	defer writer.Close()
+
+	_, err := writer.Write(modifiedBody)
+	if err != nil {
+		return err
+	}
+	err = writer.Flush()
+	if err != nil {
+		return err
+	}
+	err = writer.Close()
+	if err != nil {
+		return err
+	}
+
+	// 修改 Content-Encoding 头
+	res.Header.Set("Content-Encoding", "gzip")
+	
 	// 修改 Content-Length 头
 	// res.ContentLength = int64(buf.Len())
 	res.Header.Set("Content-Length", strconv.Itoa(buf.Len()))
